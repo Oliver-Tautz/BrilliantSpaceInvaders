@@ -14,24 +14,39 @@ public class Invaders : MonoBehaviour
 
     public Invader[] prefabs;
 
-    private float scalingFactor = 1.4f;
+    public float scalingFactor = 1.4f; // sprite scaling factor
 
-    public float stepInterval = 0.3f;   // seconds between moves
+    public float stepInterval = 1f;   // seconds between moves
+
+    public float step_size_horizontal = 1f;
+    public float step_size_vertical = 0.3f;
+
     private float stepTimer = 0f;
-
-    public float step_size = 0.5f;
-
+    private bool boundaryHitThisStep = false;
     private void revert_direction()
     {
-        this.currentDirection = (this.currentDirection == Direction.Left) ? Direction.Right : Direction.Left;
+        currentDirection = (currentDirection == Direction.Left) ? Direction.Right : Direction.Left;
 
     }
-
+    /// <summary>
+    /// Moves the Invaders Grid down one step.
+    /// </summary>
     private void step_down()
     {
-        this.transform.position += Vector3.down * 0.5f;
+        this.transform.position += Vector3.down * step_size_vertical;
     }
 
+    /// <summary>
+    /// Updates the BoxCollider2D attached to the swarm so that it always
+    /// matches the collective bounds of all active child Invaders.
+    /// </summary>
+    /// <remarks>
+    /// - If there are no child objects, the method exits early.
+    /// - It calculates world-space bounds that encapsulate all active
+    ///   child positions, then converts that to local space.
+    /// - Finally, it applies the calculated center and size to the
+    ///   BoxCollider2D component on this GameObject.
+    /// </remarks>
     private void UpdateColliderBounds()
     {
         if (transform.childCount == 0) return;
@@ -51,6 +66,8 @@ public class Invaders : MonoBehaviour
         swarmCollider.size = bounds.size;
     }
 
+
+
     private void Awake()
     {
         for (int row = 0; row < this.rows; row++)
@@ -69,10 +86,23 @@ public class Invaders : MonoBehaviour
             }
         }
         this.UpdateColliderBounds();
-
-
-
     }
+
+    /// <summary>
+    /// Moves the Invaders Grid right or left depending on the current direction.
+    /// </summary>
+    private void move()
+    {
+        if (currentDirection == Direction.Right)
+        {
+            this.transform.position += Vector3.right * this.step_size_horizontal;
+        }
+        else
+        {
+            this.transform.position += Vector3.left * this.step_size_horizontal;
+        }
+    }
+
 
     void Update()
     {
@@ -82,15 +112,17 @@ public class Invaders : MonoBehaviour
         {
             stepTimer = 0f; // reset timer
 
-            // do your step movement here
-            if (currentDirection == Direction.Right)
+            // if boundary hit revert_direction, move down and reset
+            if (boundaryHitThisStep)
             {
-                this.transform.position += Vector3.right * this.step_size;
+                revert_direction();
+                step_down();
+                boundaryHitThisStep = false;
             }
-            else
-            {
-                this.transform.position += Vector3.left * this.step_size;
-            }
+
+
+
+            move();
         }
 
 
@@ -98,13 +130,13 @@ public class Invaders : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Boundary"))
+
+
+        if (other.CompareTag("Boundary") && !boundaryHitThisStep)
         {
-            print(this.currentDirection);
-            revert_direction();
-            print(this.currentDirection);
-            step_down();
+            boundaryHitThisStep = true;
         }
+
     }
 
 }

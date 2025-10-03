@@ -708,6 +708,10 @@ MonoBehaviour:
   - {fileID: 6197385441943013935, guid: a6c2b3417261df248b4961b3939edfe1, type: 3}
   - {fileID: 6197385441943013935, guid: a6c2b3417261df248b4961b3939edfe1, type: 3}
   - {fileID: 6197385441943013935, guid: a6c2b3417261df248b4961b3939edfe1, type: 3}
+  - {fileID: 6197385441943013935, guid: a6c2b3417261df248b4961b3939edfe1, type: 3}
+  - {fileID: 6197385441943013935, guid: a6c2b3417261df248b4961b3939edfe1, type: 3}
+  stepInterval: 1
+  step_size: 1
 --- !u!4 &889889445
 Transform:
   m_ObjectHideFlags: 0
