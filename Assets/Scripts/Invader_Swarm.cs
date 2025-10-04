@@ -6,24 +6,34 @@ using UnityEngine;
 public class Invaders : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public int rows = 5;
-    public int columns = 11;
+    [SerializeField] private int rows = 5;
+    [SerializeField] private int columns = 11;
 
     public enum Direction { Left, Right };
     private Direction currentDirection = Direction.Right;
 
-    public Invader[] prefabs;
+    [SerializeField] private Invader[] prefabs;
 
-    public float scalingFactor = 1.4f; // sprite scaling factor
+    [SerializeField] private float scalingFactor = 1.4f; // sprite scaling factor
 
-    public float stepInterval = 1f;   // seconds between moves
 
-    public float step_size_horizontal = 1f;
-    public float step_size_vertical = 0.3f;
+    [SerializeField] private float stepSizeHorizontal = 1f;
+    [SerializeField] private float stepSizeVertical = 0.3f;
+
+
+    [SerializeField] private float maxStepInterval = 1.0f; // max seconds between moves.
+    [SerializeField] private float minStepInterval = 0.1f; // min seconds between moves.
+
+    private float stepInterval;   // seconds between moves.
+
+    private bool[,] aliveGrid; // true if alive, false if dead
 
     private float stepTimer = 0f;
     private bool boundaryHitThisStep = false;
-    private void revert_direction()
+
+    private int invadersAlive;
+    private int invadersTotal => rows * columns;
+    private void RevertDirection()
     {
         currentDirection = (currentDirection == Direction.Left) ? Direction.Right : Direction.Left;
 
@@ -31,9 +41,9 @@ public class Invaders : MonoBehaviour
     /// <summary>
     /// Moves the Invaders Grid down one step.
     /// </summary>
-    private void step_down()
+    private void StepDown()
     {
-        this.transform.position += Vector3.down * step_size_vertical;
+        this.transform.position += Vector3.down * stepSizeVertical;
     }
 
     /// <summary>
@@ -70,36 +80,59 @@ public class Invaders : MonoBehaviour
 
     private void Awake()
     {
-        for (int row = 0; row < this.rows; row++)
-        {
-            for (int col = 0; col < this.columns; col++)
-            {
-                Invader invader = Instantiate(this.prefabs[row], this.transform);
+        // Initialize stepInterval min Speed.
+        stepInterval = Mathf.Lerp(maxStepInterval, minStepInterval, 0);
 
+        aliveGrid = new bool[columns, rows];
+
+        // Create the grid of invaders
+        for (int row = 0; row < rows; row++)
+        {
+
+            for (int col = 0; col < columns; col++)
+            {
+
+                // Instantiate an invader from the appropriate prefab for this row
+                Invader invader = Instantiate(prefabs[row], this.transform);
+                invader.Initialize(col, row, rows);
+                invadersAlive++;
+
+
+                // Position the invader in a grid formation
                 invader.transform.localPosition = new Vector3(
                     scalingFactor * (col - (this.columns - 1) / 2.0f),
                     scalingFactor * (row - (this.rows - 1) / 2.0f),
                     0
                 );
+
+
+
+                // Scale the invader sprite
                 invader.transform.localScale = Vector3.one * this.scalingFactor;
+                // Subscribe to the OnInvaderKilled event
+                invader.OnInvaderKilled += HandleInvaderKilled;
+
+                // Set grid coordinates and mark alive
+                aliveGrid[col, row] = true;
 
             }
         }
+
         this.UpdateColliderBounds();
     }
 
     /// <summary>
     /// Moves the Invaders Grid right or left depending on the current direction.
     /// </summary>
-    private void move()
+    private void Move()
     {
         if (currentDirection == Direction.Right)
         {
-            this.transform.position += Vector3.right * this.step_size_horizontal;
+            this.transform.position += Vector3.right * this.stepSizeHorizontal;
         }
         else
         {
-            this.transform.position += Vector3.left * this.step_size_horizontal;
+            this.transform.position += Vector3.left * this.stepSizeHorizontal;
         }
     }
 
@@ -115,14 +148,14 @@ public class Invaders : MonoBehaviour
             // if boundary hit revert_direction, move down and reset
             if (boundaryHitThisStep)
             {
-                revert_direction();
-                step_down();
+                RevertDirection();
+                StepDown();
                 boundaryHitThisStep = false;
             }
 
 
 
-            move();
+            Move();
         }
 
 
@@ -136,6 +169,26 @@ public class Invaders : MonoBehaviour
         {
             boundaryHitThisStep = true;
         }
+
+    }
+
+
+    private void UpdateStepSpeed()
+    {
+        float t = 1f - (invadersAlive / (float)invadersTotal); // 0..1 based on progress
+        stepInterval = Mathf.Lerp(maxStepInterval, minStepInterval, t);
+
+
+    }
+    private void HandleInvaderKilled(Invader killed)
+    {
+        if (killed != null)
+            killed.OnInvaderKilled -= HandleInvaderKilled;
+
+        invadersAlive--;
+        UpdateColliderBounds();
+        UpdateStepSpeed();
+        aliveGrid[killed.getCoordinateX(), killed.getCoordinateY()] = false;
 
     }
 
