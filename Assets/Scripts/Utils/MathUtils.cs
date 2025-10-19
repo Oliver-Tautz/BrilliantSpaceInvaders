@@ -1,5 +1,5 @@
 // Assets/Scripts/Utils/MathUtils.cs
-namespace YourGame.Utils
+namespace BRILLIANTSPACEINVADERS.Utils
 {
     public static class MathUtils
     {

@@ -188,7 +188,7 @@ public class Invaders : MonoBehaviour
         invadersAlive--;
         UpdateColliderBounds();
         UpdateStepSpeed();
-        aliveGrid[killed.getCoordinateX(), killed.getCoordinateY()] = false;
+        aliveGrid[killed.GetCoordinateX, killed.GetCoordinateY] = false;
 
     }
 

@@ -25,6 +25,10 @@ public class Invader : MonoBehaviour
     [Tooltip("Hit points for this invader.")]
     [SerializeField] private int health = 1;
 
+    public int GetCoordinateY => CoordinateY;
+
+    public int GetCoordinateX => CoordinateX;
+
     public int Health => health;
 
 
