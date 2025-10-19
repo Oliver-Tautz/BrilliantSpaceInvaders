@@ -1,7 +1,7 @@
 using UnityEngine;
+using System;
 
 
-// TODO: FIX Stepsize and step interval
 // TODO: Add shooting
 public class Invaders : MonoBehaviour
 {
@@ -13,10 +13,12 @@ public class Invaders : MonoBehaviour
     private Direction currentDirection = Direction.Right;
 
     [SerializeField] private Invader[] prefabs;
+    [SerializeField] private Bullet bulletPrefab;
+    private Invader[,] invaderGrid;
 
     [SerializeField] private float scalingFactor = 1.4f; // sprite scaling factor
 
-
+    public event Action OnStepComplete;
     [SerializeField] private float stepSizeHorizontal = 1f;
     [SerializeField] private float stepSizeVertical = 0.3f;
 
@@ -27,6 +29,9 @@ public class Invaders : MonoBehaviour
     private float stepInterval;   // seconds between moves.
 
     private bool[,] aliveGrid; // true if alive, false if dead
+    private uint[] colMask;
+
+
 
     private float stepTimer = 0f;
     private bool boundaryHitThisStep = false;
@@ -84,6 +89,9 @@ public class Invaders : MonoBehaviour
         stepInterval = Mathf.Lerp(maxStepInterval, minStepInterval, 0);
 
         aliveGrid = new bool[columns, rows];
+        invaderGrid = new Invader[columns, rows];
+
+
 
         // Create the grid of invaders
         for (int row = 0; row < rows; row++)
@@ -94,7 +102,7 @@ public class Invaders : MonoBehaviour
 
                 // Instantiate an invader from the appropriate prefab for this row
                 Invader invader = Instantiate(prefabs[row], this.transform);
-                invader.Initialize(col, row, rows);
+                invader.Initialize(col, row, bulletPrefab);
                 invadersAlive++;
 
 
@@ -114,6 +122,7 @@ public class Invaders : MonoBehaviour
 
                 // Set grid coordinates and mark alive
                 aliveGrid[col, row] = true;
+                invaderGrid[col, row] = invader;
 
             }
         }
@@ -135,7 +144,21 @@ public class Invaders : MonoBehaviour
             this.transform.position += Vector3.left * this.stepSizeHorizontal;
         }
     }
+    private void PrintAliveGrid()
+    {
+        string gridOutput = "";
 
+        for (int row = 0; row < rows; row++)
+        {
+            for (int col = 0; col < columns; col++)
+            {
+                gridOutput += aliveGrid[col, row] ? "1 " : "0 ";
+            }
+            gridOutput += "\n";
+        }
+
+        Debug.Log(gridOutput);
+    }
 
     void Update()
     {
@@ -153,10 +176,11 @@ public class Invaders : MonoBehaviour
                 boundaryHitThisStep = false;
             }
 
-
-
+            // PrintAliveGrid();
             Move();
+            OnStepComplete?.Invoke();
         }
+
 
 
     }
@@ -180,6 +204,24 @@ public class Invaders : MonoBehaviour
 
 
     }
+
+
+    private void SetAllowedFire()
+    {
+        for (int col = 0; col < columns; col++)
+        {
+            for (int row = rows - 1; row >= 0; row--)
+            {
+                Invader invader = invaderGrid[col, row];
+                if (invader != null && aliveGrid[col, row])
+                {
+                    invader.SetAllowedFire(true);
+                    break;
+                }
+            }
+        }
+    }
+
     private void HandleInvaderKilled(Invader killed)
     {
         if (killed != null)
@@ -188,7 +230,12 @@ public class Invaders : MonoBehaviour
         invadersAlive--;
         UpdateColliderBounds();
         UpdateStepSpeed();
-        aliveGrid[killed.GetCoordinateX, killed.GetCoordinateY] = false;
+
+
+        aliveGrid[killed.GetCoordinateCol, killed.GetCoordinateRow] = false;
+
+
+        SetAllowedFire();
 
     }
 

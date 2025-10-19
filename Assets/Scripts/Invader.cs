@@ -9,15 +9,15 @@ public class Invader : MonoBehaviour
 
     private bool isDead = false;
 
-    private float shot_timer;
-    public event Action<Invader> OnInvaderKilled;
-    private int CoordinateX;
-    private int CoordinateY;
 
-    private List<int> killedSameCol = new List<int>(); // Y Coordinates of invaders killed in the same row. 
-    private int numberOfInvadersPerCol; // Total number of invaders per column at the start of the game.
-    private int allowedFire; // Is this invader allowed to fire?
-    private int allowedSum;
+    private float shotInterval;// seconds between possible shots
+    private float shotTimer; // timer for shots
+    public event Action<Invader> OnInvaderKilled;
+    private int coordinateCol;
+    private int coordinateRow;
+    private Bullet bulletPrefab;
+
+    private bool allowedFire = false; // Is this invader allowed to fire?
     private bool _initialized;
 
     // ===== Tunables (editable in Inspector) =====
@@ -25,26 +25,55 @@ public class Invader : MonoBehaviour
     [Tooltip("Hit points for this invader.")]
     [SerializeField] private int health = 1;
 
-    public int GetCoordinateY => CoordinateY;
+    public int GetCoordinateRow => coordinateRow;
 
-    public int GetCoordinateX => CoordinateX;
+    public int GetCoordinateCol => coordinateCol;
 
     public int Health => health;
+
+
+
+
+
+    void Update()
+    {
+        shotTimer += Time.deltaTime;
+
+        if (shotTimer >= shotInterval)
+        {
+            shotTimer = 0f; // reset timer
+
+            if (allowedFire)
+            {
+                // Fire bullet
+                FireBullet();
+            }
+        }
+
+
+
+    }
+    public void SetAllowedFire(bool allowed)
+    {
+        allowedFire = allowed;
+    }
 
 
     /// <summary>
     /// Call this right after Instantiate to configure the invader.
     /// </summary>
-    public void Initialize(int col, int row, int invadersPerColumn)
+    public void Initialize(int col, int row, Bullet bulletPrefab)
     {
-        CoordinateX = col;
-        CoordinateY = row;
-        numberOfInvadersPerCol = invadersPerColumn;
+        coordinateCol = col;
+        coordinateRow = row;
 
-        // Any precomputed values that must exist before Start():
-        allowedSum = MathUtils.SumRange(CoordinateY, numberOfInvadersPerCol - 1);
+        shotInterval = UnityEngine.Random.Range(1f, 3f);
+        shotTimer = UnityEngine.Random.Range(0f, shotInterval);
+
+        this.bulletPrefab = bulletPrefab;
 
         _initialized = true;
+
     }
 
 
@@ -78,5 +107,14 @@ public class Invader : MonoBehaviour
         // Destroy this invader
         Destroy(gameObject);
     }
+    private void FireBullet()
+    {
+        // Implement bullet firing logic here
+        Debug.Log($"Invader at ({coordinateCol}, {coordinateRow}) fired a bullet!");
+
+
+        BulletFactory.FireBullet(bulletPrefab.gameObject, this.transform, Vector2.down * -5f, null);
+    }
+
 
 }

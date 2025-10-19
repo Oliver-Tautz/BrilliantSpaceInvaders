@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System;
-
+using BRILLIANTSPACEINVADERS.Utils;
 
 public class Player : MonoBehaviour
 {
@@ -74,15 +74,10 @@ public class Player : MonoBehaviour
 
     private void Fire()
     {
+
+        myActiveBullet = BulletFactory.FireBullet(bulletPrefab, firePoint, bulletLifetime, Vector2.up * bulletSpeed, HandleBulletDestroyed);
         bulletActive = true;
 
-        GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
-        myActiveBullet = bullet.GetComponent<Bullet>();
-        myActiveBullet.OnBulletDestroyed += HandleBulletDestroyed;
-        myActiveBullet.setLifetime(3f);
-
-        Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
-        rb.linearVelocity = Vector2.up * bulletSpeed;
     }
 
     private void HandleBulletDestroyed(Bullet destroyed)
