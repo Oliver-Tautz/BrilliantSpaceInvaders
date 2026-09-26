@@ -113,7 +113,7 @@ public class Invader : MonoBehaviour
         Debug.Log($"Invader at ({coordinateCol}, {coordinateRow}) fired a bullet!");
 
 
-        BulletFactory.FireBullet(bulletPrefab.gameObject, this.transform, Vector2.down * -5f, null);
+        BulletFactory.FireBullet(bulletPrefab.gameObject, transform, bulletPrefab.getLifetime(), Vector2.down * 5f, null);
     }
 
 
