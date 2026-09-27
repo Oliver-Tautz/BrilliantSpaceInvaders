@@ -116,9 +116,10 @@ public class Invaders : MonoBehaviour
 
 
                 // Scale the invader sprite
-                invader.transform.localScale = Vector3.one * this.scalingFactor;
+                invader.transform.localScale *= this.scalingFactor;
                 // Subscribe to the OnInvaderKilled event
                 invader.OnInvaderKilled += HandleInvaderKilled;
+                OnStepComplete += invader.AdvanceFrame;
 
                 // Set grid coordinates and mark alive
                 aliveGrid[col, row] = true;
@@ -225,7 +226,10 @@ public class Invaders : MonoBehaviour
     private void HandleInvaderKilled(Invader killed)
     {
         if (killed != null)
+        {
             killed.OnInvaderKilled -= HandleInvaderKilled;
+            OnStepComplete -= killed.AdvanceFrame;
+        }
 
         invadersAlive--;
         UpdateColliderBounds();

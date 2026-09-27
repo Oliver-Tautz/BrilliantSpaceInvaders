@@ -24,6 +24,34 @@ public class Invader : MonoBehaviour
     [Header("Config")]
     [Tooltip("Hit points for this invader.")]
     [SerializeField] private int health = 1;
+    [SerializeField] private Sprite[] frames;
+    private SpriteRenderer spriteRenderer;
+    private BoxCollider2D boxCollider;
+    private int frameIndex;
+
+    private void Awake()
+    {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        boxCollider = GetComponent<BoxCollider2D>();
+        FitColliderToSprite();
+    }
+
+    public void AdvanceFrame()
+    {
+        if (frames == null || frames.Length == 0) return;
+
+        frameIndex = (frameIndex + 1) % frames.Length;
+        spriteRenderer.sprite = frames[frameIndex];
+        FitColliderToSprite();
+    }
+
+    private void FitColliderToSprite()
+    {
+        if (boxCollider == null || spriteRenderer.sprite == null) return;
+
+        boxCollider.size = spriteRenderer.sprite.bounds.size;
+        boxCollider.offset = spriteRenderer.sprite.bounds.center;
+    }
 
     public int GetCoordinateRow => coordinateRow;
 
