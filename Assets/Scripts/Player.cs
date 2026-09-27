@@ -23,6 +23,7 @@ public class Player : MonoBehaviour
     private Vector2 moveInput;
     private Vector2 pointerScreenPosition;
     private bool mouseMovementActive;
+    private bool touchMovementActive;
     private Rigidbody2D rb;
     private Camera gameCamera;
     private BoxCollider2D shooterCollider;
@@ -109,6 +110,7 @@ public class Player : MonoBehaviour
         {
             moveInput = Vector2.zero;
             mouseMovementActive = false;
+            touchMovementActive = false;
             rb.linearVelocity = Vector2.zero;
             controls.Player.Disable();
             controls.UI.Point.Disable();
@@ -139,6 +141,9 @@ public class Player : MonoBehaviour
 
     private void OnPointPerformed(InputAction.CallbackContext ctx)
     {
+        if (ctx.control.device is Touchscreen || (Application.isMobilePlatform && Touchscreen.current != null))
+            return;
+
         Vector2 position = ctx.ReadValue<Vector2>();
         if (position.x < 0f || position.x > Screen.width || position.y < 0f || position.y > Screen.height)
             return;
@@ -155,7 +160,7 @@ public class Player : MonoBehaviour
             return;
         }
 
-        if (mouseMovementActive && gameCamera != null)
+        if ((mouseMovementActive || touchMovementActive) && gameCamera != null)
         {
             rb.linearVelocity = Vector2.zero;
 
@@ -239,6 +244,28 @@ public class Player : MonoBehaviour
         if (shotSound != null)
             audioSource.PlayOneShot(shotSound, shotVolume);
 
+    }
+
+    public void SetTouchTarget(Vector2 screenPosition)
+    {
+        if (gameOver || !controls.Player.enabled)
+            return;
+
+        pointerScreenPosition = screenPosition;
+        touchMovementActive = true;
+    }
+
+    public void ClearTouchTarget()
+    {
+        touchMovementActive = false;
+    }
+
+    public void FireFromTouch()
+    {
+        if (gameOver || !controls.Player.enabled || bulletActive)
+            return;
+
+        Fire();
     }
 
     private void HandleBulletDestroyed(Bullet destroyed)

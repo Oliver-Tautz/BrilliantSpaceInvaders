@@ -7,6 +7,6 @@
 - Make it fun, aka test against real space invaders and make it better than original>?
 - Deploy the game on the website.
 - make mouse movement feewl good
+- Keep the player within the game boundaries.
 - Make bunkers destructible.
-
 
