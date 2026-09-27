@@ -26,8 +26,9 @@ jobs:
       - name: Check out project
         uses: actions/checkout@v4
 
-      - name: Cache Unity Library
-        uses: actions/cache@v4
+      - name: Restore Unity Library cache
+        id: unity-cache
+        uses: actions/cache/restore@v4
         with:
           path: Library
           key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
@@ -57,6 +58,14 @@ jobs:
         with:
           targetPlatform: WebGL
           buildProfile: Assets/Settings/Build Profiles/Web - Desktop - Release.asset
+
+      - name: Save Unity Library cache
+        if: always() && steps.unity-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: Library
+          key: ${{ steps.unity-cache.outputs.cache-primary-key }}
 
       - name: Prepare GitHub Pages files
         shell: bash
