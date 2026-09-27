@@ -155,4 +155,8 @@ MonoBehaviour:
   minShotInterval: 5
   maxShotInterval: 15
   bulletSpeed: 5
+  shotSound: {fileID: 8300000, guid: 3ca5ebc8e0144f46a7b4500b6830e92a, type: 3}
+  deathSound: {fileID: 0}
+  shotVolume: 0.5
+  deathVolume: 0.5
   frames: []

@@ -87,6 +87,12 @@ public class Invaders : MonoBehaviour
 
     private void Awake()
     {
+        AudioSource shotAudio = GetComponent<AudioSource>();
+        if (shotAudio == null)
+            shotAudio = gameObject.AddComponent<AudioSource>();
+        shotAudio.playOnAwake = false;
+        shotAudio.spatialBlend = 0f;
+
         // Initialize stepInterval min Speed.
         stepInterval = Mathf.Lerp(maxStepInterval, minStepInterval, 0);
 

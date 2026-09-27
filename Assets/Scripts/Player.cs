@@ -9,6 +9,11 @@ public class Player : MonoBehaviour
     [SerializeField] private float bulletSpeed = 10f;
     [SerializeField] private float bulletLifetime = 5f;
     [SerializeField] private float moveSpeed = 6f;
+    [Header("Audio")]
+    [SerializeField] private AudioClip shotSound;
+    [SerializeField, Range(0f, 1f)] private float shotVolume = 1f;
+    [SerializeField] private AudioClip hitSound;
+    [SerializeField, Range(0f, 1f)] private float hitVolume = 1f;
     [Header("Lives")]
     [SerializeField, Min(1)] private int startingLives = 3;
     [SerializeField, Min(0f)] private float respawnInvulnerability = 1f;
@@ -16,11 +21,15 @@ public class Player : MonoBehaviour
     private float lastFireTime;
     private Controls controls;
     private Vector2 moveInput;
+    private Vector2 pointerScreenPosition;
+    private bool mouseMovementActive;
     private Rigidbody2D rb;
+    private Camera gameCamera;
     private BoxCollider2D shooterCollider;
     private bool bulletActive = false;
     private Bullet myActiveBullet;
     private SpriteRenderer spriteRenderer;
+    private AudioSource audioSource;
     private Vector2 startingPosition;
     [SerializeField, Min(0)] private int livesRemaining;
     private float invulnerabilityTimer;
@@ -31,14 +40,21 @@ public class Player : MonoBehaviour
 
     private Action<InputAction.CallbackContext> _onAttackPerformed;
     private Action<InputAction.CallbackContext> _onMovePerformed;
-    private Action<InputAction.CallbackContext> _onMoveCanceled; private void Awake()
+    private Action<InputAction.CallbackContext> _onMoveCanceled;
+    private Action<InputAction.CallbackContext> _onPointPerformed;
 
-
+    private void Awake()
     {
         InitializeControls();
         rb = GetComponent<Rigidbody2D>();
+        gameCamera = Camera.main;
         shooterCollider = GetComponent<BoxCollider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f;
         startingPosition = rb.position;
         livesRemaining = startingLives;
         shooterCollider.enabled = true;
@@ -53,8 +69,9 @@ public class Player : MonoBehaviour
 
         controls = new Controls();
         _onAttackPerformed = OnAttack;
-        _onMovePerformed = ctx => moveInput = ctx.ReadValue<Vector2>();
+        _onMovePerformed = OnMovePerformed;
         _onMoveCanceled = ctx => moveInput = Vector2.zero;
+        _onPointPerformed = OnPointPerformed;
     }
 
 
@@ -75,6 +92,7 @@ public class Player : MonoBehaviour
         controls.Player.Attack.performed += _onAttackPerformed;
         controls.Player.Move.performed += _onMovePerformed;
         controls.Player.Move.canceled += _onMoveCanceled;
+        controls.UI.Point.performed += _onPointPerformed;
     }
 
     public void SetGameActive(bool active)
@@ -85,12 +103,15 @@ public class Player : MonoBehaviour
         if (active)
         {
             controls.Player.Enable();
+            controls.UI.Point.Enable();
         }
         else
         {
             moveInput = Vector2.zero;
+            mouseMovementActive = false;
             rb.linearVelocity = Vector2.zero;
             controls.Player.Disable();
+            controls.UI.Point.Disable();
         }
     }
 
@@ -103,8 +124,27 @@ public class Player : MonoBehaviour
         controls.Player.Attack.performed -= _onAttackPerformed;
         controls.Player.Move.performed -= _onMovePerformed;
         controls.Player.Move.canceled -= _onMoveCanceled;
+        controls.UI.Point.performed -= _onPointPerformed;
 
         controls.Player.Disable();
+        controls.UI.Point.Disable();
+    }
+
+    private void OnMovePerformed(InputAction.CallbackContext ctx)
+    {
+        moveInput = ctx.ReadValue<Vector2>();
+        if (moveInput.x != 0f)
+            mouseMovementActive = false;
+    }
+
+    private void OnPointPerformed(InputAction.CallbackContext ctx)
+    {
+        Vector2 position = ctx.ReadValue<Vector2>();
+        if (position.x < 0f || position.x > Screen.width || position.y < 0f || position.y > Screen.height)
+            return;
+
+        pointerScreenPosition = position;
+        mouseMovementActive = true;
     }
 
     private void FixedUpdate()
@@ -115,7 +155,22 @@ public class Player : MonoBehaviour
             return;
         }
 
-        // Only move left/right, ignore y
+        if (mouseMovementActive && gameCamera != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+
+            float depth = transform.position.z - gameCamera.transform.position.z;
+            float targetX = gameCamera.ScreenToWorldPoint(new Vector3(pointerScreenPosition.x, pointerScreenPosition.y, depth)).x;
+            float leftEdge = gameCamera.ViewportToWorldPoint(new Vector3(0f, 0f, depth)).x + shooterCollider.bounds.extents.x;
+            float rightEdge = gameCamera.ViewportToWorldPoint(new Vector3(1f, 0f, depth)).x - shooterCollider.bounds.extents.x;
+            targetX = Mathf.Clamp(targetX, leftEdge, rightEdge);
+
+            float nextX = Mathf.MoveTowards(rb.position.x, targetX, moveSpeed * Time.fixedDeltaTime);
+            rb.MovePosition(new Vector2(nextX, rb.position.y));
+            return;
+        }
+
+        // Keyboard movement stays on the horizontal axis.
         Vector2 velocity = new Vector2(moveInput.x * moveSpeed, 0f);
         rb.linearVelocity = velocity;
     }
@@ -138,6 +193,8 @@ public class Player : MonoBehaviour
             return;
 
         livesRemaining--;
+        if (hitSound != null)
+            audioSource.PlayOneShot(hitSound, hitVolume);
         Debug.Log($"Player hit. Lives remaining: {livesRemaining}");
 
         if (livesRemaining <= 0)
@@ -179,6 +236,8 @@ public class Player : MonoBehaviour
 
         myActiveBullet = BulletFactory.FireBullet(bulletPrefab, shooterCollider, bulletLifetime, Vector2.up * bulletSpeed, HandleBulletDestroyed);
         bulletActive = true;
+        if (shotSound != null)
+            audioSource.PlayOneShot(shotSound, shotVolume);
 
     }
 

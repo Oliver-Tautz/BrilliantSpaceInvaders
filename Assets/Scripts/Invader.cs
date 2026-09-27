@@ -33,6 +33,13 @@ public class Invader : MonoBehaviour
     [Tooltip("Downward bullet speed in units per second.")]
     [SerializeField, Min(0f)] private float bulletSpeed = 5f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip shotSound;
+    [SerializeField] private AudioClip deathSound;
+    [SerializeField, Range(0f, 1f)] private float shotVolume = 0.5f;
+    [SerializeField, Range(0f, 1f)] private float deathVolume = 0.5f;
+    private AudioSource audioSource;
+
     [SerializeField] private Sprite[] frames;
     private SpriteRenderer spriteRenderer;
     private BoxCollider2D boxCollider;
@@ -42,6 +49,11 @@ public class Invader : MonoBehaviour
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         boxCollider = GetComponent<BoxCollider2D>();
+        audioSource = GetComponentInParent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f;
         if (boxCollider != null)
             boxCollider.enabled = true;
         FitColliderToSprite();
@@ -142,6 +154,17 @@ public class Invader : MonoBehaviour
 
     private void Kill()
     {
+        // Play from a separate object so destroying this invader does not cut off the sound.
+        if (deathSound != null)
+        {
+            GameObject soundObject = new GameObject("Invader Death Sound");
+            AudioSource source = soundObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.spatialBlend = 0f;
+            source.PlayOneShot(deathSound, deathVolume);
+            Destroy(soundObject, deathSound.length);
+        }
+
         // Notify observers
         OnInvaderKilled?.Invoke(this);
 
@@ -155,6 +178,8 @@ public class Invader : MonoBehaviour
 
 
         BulletFactory.FireBullet(bulletPrefab.gameObject, boxCollider, bulletPrefab.getLifetime(), Vector2.down * bulletSpeed, null);
+        if (shotSound != null)
+            audioSource.PlayOneShot(shotSound, shotVolume);
     }
 
 
