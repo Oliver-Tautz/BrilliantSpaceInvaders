@@ -19,7 +19,6 @@ jobs:
     name: Build Unity WebGL
     runs-on: ubuntu-latest
 
-    # Your Unity secrets / variables live here
     environment:
       name: build
 
@@ -27,11 +26,11 @@ jobs:
       - name: Check out project
         uses: actions/checkout@v4
 
-      - name: Cache Unity imports
+      - name: Cache Unity Library
         uses: actions/cache@v4
         with:
           path: Library
-          key: Library-WebGL-${{ hashFiles('Assets/**/*.cs', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
           restore-keys: |
             Library-WebGL-
 
@@ -42,8 +41,10 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         shell: bash
         run: |
+          set -euo pipefail
+
           if [[ -z "$UNITY_LICENSE" || -z "$UNITY_EMAIL" || -z "$UNITY_PASSWORD" ]]; then
-            echo "::error::Set UNITY_LICENSE, UNITY_EMAIL, and UNITY_PASSWORD in repository Actions secrets."
+            echo "::error::Set UNITY_LICENSE, UNITY_EMAIL, and UNITY_PASSWORD in the 'build' GitHub environment."
             exit 1
           fi
 
@@ -62,23 +63,38 @@ jobs:
         run: |
           set -euo pipefail
 
-          mapfile -t index_files < <(find build/WebGL -type f -name index.html)
+          mapfile -t index_files < <(
+            find build/WebGL -type f -name index.html
+          )
 
           if [[ ${#index_files[@]} -ne 1 ]]; then
-            echo "::error::Expected one Web build index.html under build/WebGL."
+            echo "::error::Expected exactly one WebGL index.html under build/WebGL."
+            echo "Found: ${#index_files[@]}"
+            printf '%s\n' "${index_files[@]}"
             exit 1
           fi
 
+          rm -rf public
           mkdir -p public
+
           cp -a "$(dirname "${index_files[0]}")"/. public/
+
           touch public/.nojekyll
 
-          if [[ -n "$(find public/Build -type f \( -name '*.br' -o -name '*.gz' \) -print -quit)" ]]; then
-            echo "::error::Unity emitted compressed files without decompression fallback."
+          if [[ -d public/Build ]] && \
+             [[ -n "$(find public/Build -type f \( -name '*.br' -o -name '*.gz' \) -print -quit)" ]]; then
+            echo "::error::Unity emitted compressed .br/.gz files."
+            echo "::error::GitHub Pages cannot provide the required Content-Encoding headers."
+            echo "::error::Enable decompression fallback or disable compression in the Unity WebGL build profile."
             exit 1
           fi
 
-      - name: Upload Web player
+      - name: Show generated files
+        shell: bash
+        run: |
+          find public -maxdepth 3 -type f | sort
+
+      - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: public
