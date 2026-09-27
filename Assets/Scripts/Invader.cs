@@ -6,7 +6,6 @@ using System.Collections.Generic;
 public class Invader : MonoBehaviour
 {
 
-
     private bool isDead = false;
 
 
@@ -17,6 +16,7 @@ public class Invader : MonoBehaviour
     private int coordinateRow;
     private Bullet bulletPrefab;
 
+
     private bool allowedFire = false; // Is this invader allowed to fire?
     private bool _initialized;
 
@@ -24,6 +24,15 @@ public class Invader : MonoBehaviour
     [Header("Config")]
     [Tooltip("Hit points for this invader.")]
     [SerializeField] private int health = 1;
+
+    [Header("Firing")]
+    [Tooltip("Shortest delay between this invader's shots, in seconds.")]
+    [SerializeField, Min(0.1f)] private float minShotInterval = 1f;
+    [Tooltip("Longest delay between this invader's shots, in seconds.")]
+    [SerializeField, Min(0.1f)] private float maxShotInterval = 3f;
+    [Tooltip("Downward bullet speed in units per second.")]
+    [SerializeField, Min(0f)] private float bulletSpeed = 5f;
+
     [SerializeField] private Sprite[] frames;
     private SpriteRenderer spriteRenderer;
     private BoxCollider2D boxCollider;
@@ -33,6 +42,8 @@ public class Invader : MonoBehaviour
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         boxCollider = GetComponent<BoxCollider2D>();
+        if (boxCollider != null)
+            boxCollider.enabled = true;
         FitColliderToSprite();
     }
 
@@ -95,7 +106,9 @@ public class Invader : MonoBehaviour
         coordinateCol = col;
         coordinateRow = row;
 
-        shotInterval = UnityEngine.Random.Range(1f, 3f);
+        float shortestInterval = Mathf.Min(minShotInterval, maxShotInterval);
+        float longestInterval = Mathf.Max(minShotInterval, maxShotInterval);
+        shotInterval = UnityEngine.Random.Range(shortestInterval, longestInterval);
         shotTimer = UnityEngine.Random.Range(0f, shotInterval);
 
         this.bulletPrefab = bulletPrefab;
@@ -108,7 +121,7 @@ public class Invader : MonoBehaviour
     private void OnTriggerEnter2D(Collider2D other)
     {
         // Use layers/tags to keep this tight
-        if (other.CompareTag("PlayerBullet"))
+        if (other.CompareTag("Bullet_Player"))
         {
             // If you use pooled bullets, disable instead of Destroy
             Destroy(other.gameObject);
@@ -141,7 +154,7 @@ public class Invader : MonoBehaviour
         Debug.Log($"Invader at ({coordinateCol}, {coordinateRow}) fired a bullet!");
 
 
-        BulletFactory.FireBullet(bulletPrefab.gameObject, transform, bulletPrefab.getLifetime(), Vector2.down * 5f, null);
+        BulletFactory.FireBullet(bulletPrefab.gameObject, boxCollider, bulletPrefab.getLifetime(), Vector2.down * bulletSpeed, null);
     }
 
 

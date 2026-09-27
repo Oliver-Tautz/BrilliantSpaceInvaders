@@ -24,13 +24,15 @@ public class Bullet : MonoBehaviour
     }
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Example: destroy on hitting something
-        if (other.CompareTag("Invader") || other.CompareTag("Boundary") || other.CompareTag("Bunker"))
+        // Keep traveling when this collider has an ignored tag.
+        for (int i = 0; i < ignoreTags.Length; i++)
         {
-
-            Destroy(gameObject);
-
+            if (other.gameObject.tag == ignoreTags[i])
+                return;
         }
+
+        // Any other collision consumes the bullet.
+        Destroy(gameObject);
     }
 
     private void OnDestroy()

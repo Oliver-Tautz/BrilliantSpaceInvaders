@@ -8,6 +8,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 43682972171122212, guid: 2dadf578dabc3c0429cbc4c195351810, type: 3}
+      propertyPath: ignoreTags.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 43682972171122212, guid: 2dadf578dabc3c0429cbc4c195351810, type: 3}
+      propertyPath: 'ignoreTags.Array.data[0]'
+      value: Invader
+      objectReference: {fileID: 0}
+    - target: {fileID: 43682972171122212, guid: 2dadf578dabc3c0429cbc4c195351810, type: 3}
+      propertyPath: 'ignoreTags.Array.data[1]'
+      value: Invader
+      objectReference: {fileID: 0}
     - target: {fileID: 1265162603009609216, guid: 2dadf578dabc3c0429cbc4c195351810, type: 3}
       propertyPath: m_Name
       value: Bullet_Invader

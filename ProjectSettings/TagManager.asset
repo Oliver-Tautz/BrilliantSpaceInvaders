@@ -9,6 +9,8 @@ TagManager:
   - Bunker
   - Undefined
   - Invader
+  - Bullet_Invader
+  - Bullet_Player
   layers:
   - Default
   - TransparentFX

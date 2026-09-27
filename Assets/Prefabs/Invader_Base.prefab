@@ -152,3 +152,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   health: 1
+  minShotInterval: 5
+  maxShotInterval: 15
+  bulletSpeed: 5
+  frames: []

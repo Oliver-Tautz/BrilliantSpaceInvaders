@@ -19,6 +19,8 @@ public class Invaders : MonoBehaviour
     [SerializeField] private float scalingFactor = 1.4f; // sprite scaling factor
 
     public event Action OnStepComplete;
+    public event Action<Invader> OnInvaderKilled;
+    public event Action OnAllInvadersKilled;
     [SerializeField] private float stepSizeHorizontal = 1f;
     [SerializeField] private float stepSizeVertical = 0.3f;
 
@@ -128,6 +130,7 @@ public class Invaders : MonoBehaviour
             }
         }
 
+        SetAllowedFire();
         this.UpdateColliderBounds();
     }
 
@@ -211,7 +214,7 @@ public class Invaders : MonoBehaviour
     {
         for (int col = 0; col < columns; col++)
         {
-            for (int row = rows - 1; row >= 0; row--)
+            for (int row = 0; row < rows; row++)
             {
                 Invader invader = invaderGrid[col, row];
                 if (invader != null && aliveGrid[col, row])
@@ -240,6 +243,9 @@ public class Invaders : MonoBehaviour
 
 
         SetAllowedFire();
+        OnInvaderKilled?.Invoke(killed);
+        if (invadersAlive == 0)
+            OnAllInvadersKilled?.Invoke();
 
     }
 
