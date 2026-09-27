@@ -1,0 +1,84 @@
+name: Build and deploy Web game
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Cache Unity imports
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-WebGL-${{ hashFiles('Assets/**/*.cs', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: Library-WebGL-
+
+      - name: Check Unity license secrets
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        shell: bash
+        run: |
+          if [[ -z "$UNITY_LICENSE" || -z "$UNITY_EMAIL" || -z "$UNITY_PASSWORD" ]]; then
+            echo "::error::Set UNITY_LICENSE, UNITY_EMAIL, and UNITY_PASSWORD in repository Actions secrets."
+            exit 1
+          fi
+
+      - name: Build Unity Web player
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: WebGL
+          buildProfile: Assets/Settings/Build Profiles/Web - Desktop - Release.asset
+
+      - name: Prepare GitHub Pages files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t index_files < <(find build/WebGL -type f -name index.html)
+          if [[ ${#index_files[@]} -ne 1 ]]; then
+            echo "::error::Expected one Web build index.html under build/WebGL."
+            exit 1
+          fi
+          mkdir -p public
+          cp -a "$(dirname "${index_files[0]}")"/. public/
+          touch public/.nojekyll
+          if [[ -n "$(find public/Build -type f \( -name '*.br' -o -name '*.gz' \) -print -quit)" ]]; then
+            echo "::error::Unity emitted compressed files without decompression fallback."
+            exit 1
+          fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Web player
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
